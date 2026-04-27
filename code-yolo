@@ -1,0 +1,81 @@
+fromultralytics import YOLO
+import torch
+importmatplotlib.pyplot as plt
+import cv2
+importos
+DEVICE = &quot;cuda&quot; if torch.cuda.is_available() else &quot;cpu&quot;
+print(&quot;Using Device:&quot;, DEVICE)
+model = YOLO(&quot;yolov8l.pt&quot;)
+results = model.train(
+data=&quot;marine_debris.yaml&quot;,
+epochs=150,
+imgsz=640,
+batch=8,
+optimizer=&quot;AdamW&quot;,
+lr0=0.0005,
+degrees=5.0,
+translate=0.1,
+scale=0.3,
+fliplr=0.5,
+
+74
+
+mosaic=1.0,
+device=DEVICE
+)
+
+metrics = model.val()
+print(&quot;Validation Results&quot;)
+print(&quot;mAP50:&quot;, metrics.box.map50)
+print(&quot;mAP50-95:&quot;, metrics.box.map)
+print(&quot;Precision:&quot;, metrics.box.mp)
+print(&quot;Recall:&quot;, metrics.box.mr)
+
+sample_image = &quot;test.jpg&quot; # replace with your test image path
+prediction = model.predict(
+source=sample_image,
+conf=0.25,
+save=True,
+show=True
+)
+output_path = &quot;runs/detect/predict/&quot;
++os.path.basename(sample_image)
+ifos.path.exists(output_path):
+img = cv2.imread(output_path)
+img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+plt.figure(figsize=(10, 8))
+plt.imshow(img)
+plt.title(&quot;YOLOv8l Detection Output&quot;)
+
+75
+
+plt.axis(&quot;off&quot;)
+plt.show()
+results_csv = &quot;runs/detect/train/results.csv&quot;
+ifos.path.exists(results_csv):
+import pandas as pd
+df = pd.read_csv(results_csv)
+# Training Loss Graph
+plt.figure(figsize=(8, 5))
+plt.plot(df[&quot;train/box_loss&quot;], label=&quot;Box Loss&quot;)
+plt.plot(df[&quot;train/cls_loss&quot;], label=&quot;Class Loss&quot;)
+plt.plot(df[&quot;train/dfl_loss&quot;], label=&quot;DFL Loss&quot;)
+plt.title(&quot;YOLOv8l Training Loss Curve&quot;)
+plt.xlabel(&quot;Epoch&quot;)
+plt.ylabel(&quot;Loss&quot;)
+plt.legend()
+plt.show()
+# Precision / Recall / mAP Graph
+plt.figure(figsize=(8, 5))
+plt.plot(df[&quot;metrics/precision(B)&quot;], label=&quot;Precision&quot;)
+plt.plot(df[&quot;metrics/recall(B)&quot;], label=&quot;Recall&quot;)
+plt.plot(df[&quot;metrics/mAP50(B)&quot;], label=&quot;mAP@50&quot;)
+plt.plot(df[&quot;metrics/mAP50-95(B)&quot;], label=&quot;mAP@50-95&quot;)
+plt.title(&quot;YOLOv8l Performance Metrics&quot;)
+plt.xlabel(&quot;Epoch&quot;)
+plt.ylabel(&quot;Score&quot;)
+plt.legend()
+
+76
+
+plt.show()
